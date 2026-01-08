@@ -40,6 +40,12 @@ function loginUser() {
     if (user === "admin" && pass === "1234") {
         msg.innerHTML = "✅ Login Successful!";
         msg.className = "message";
+        
+        // Store username and redirect to dashboard
+        localStorage.setItem("username", user);
+        setTimeout(() => {
+            window.location.href = "Dashboard.html";
+        }, 1500);
     } else {
         msg.innerHTML = "❌ Invalid Username or Password";
         msg.className = "message error";
