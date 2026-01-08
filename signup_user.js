@@ -31,8 +31,10 @@ function signupUser() {
         return;
     }
 
-    if (phone.length < 10) {
-        msg.innerHTML = "❌ Phone number must be at least 10 digits";
+    // Validate phone number format (only digits, 10-15 digits)
+    let phoneRegex = /^[0-9]{10,15}$/;
+    if (!phoneRegex.test(phone)) {
+        msg.innerHTML = "❌ Phone number must contain only digits and be 10-15 digits long";
         msg.className = "message error";
         return;
     }
