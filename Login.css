@@ -8,8 +8,8 @@ body {
     height: 100vh;
 }
 
-/* Signup Box */
-.signup-box {
+/* Login Box */
+.login-box {
     width: 350px;
     background-color: #111;
     padding: 30px;
@@ -18,7 +18,7 @@ body {
 }
 
 /* Heading */
-.signup-box h2 {
+.login-box h2 {
     color: #007bff;
     text-align: center;
     margin-bottom: 20px;
@@ -59,7 +59,13 @@ button {
     cursor: pointer;
 }
 
-.signup-btn {
+.otp-btn {
+    background-color: black;
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.login-btn {
     background-color: #007bff;
     color: white;
 }
@@ -78,7 +84,6 @@ button:hover {
 .error {
     color: red;
 }
-
 .link-text {
     text-align: center;
     margin-top: 15px;
