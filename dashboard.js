@@ -365,8 +365,101 @@ function logoutUser() {
 window.onclick = function(event) {
     let modals = document.querySelectorAll(".modal.show");
     modals.forEach(modal => {
-        if (event.target == modal) {
+        if (event.target === modal) {
             modal.classList.remove("show");
         }
     });
 };
+
+// profile model 
+function openProfileModal() {
+    document.getElementById("profileModal").classList.add("show");
+
+    // Display User ID
+    let userId = localStorage.getItem("userId");
+    if (userId) {
+        document.getElementById("profileUserId").textContent = "User ID: " + userId;
+    }
+
+    // Pre-fill user details from backend
+    let username = localStorage.getItem("username");
+    if (username) {
+        fetch("http://localhost:8082/user/details?username=" + username)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("profileUsername").value = data.userName;
+                document.getElementById("profileEmail").value = data.email;
+                document.getElementById("profilePhone").value = data.phoneNumber;
+            })
+            .catch(err => console.error("Failed to load profile", err));
+    }
+}
+
+async function updateProfile() {
+    let msg = document.getElementById("profileMsg");
+    let userId = localStorage.getItem("userId");
+
+    if (!userId) {
+        msg.innerHTML = "❌ User ID not found. Please log in again.";
+        msg.className = "message error";
+        return;
+    }
+
+    let updatedUser = {
+        userName: document.getElementById("profileUsername").value,
+        email: document.getElementById("profileEmail").value,
+        phoneNumber: document.getElementById("profilePhone").value,
+        password: document.getElementById("profilePassword").value
+    };
+
+    try {
+        let response = await fetch(`http://localhost:8082/user/update/${userId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedUser)
+        });
+
+        if (response.ok) {
+            let data = await response.json();
+            msg.innerHTML = "✅ Profile updated successfully!";
+            msg.className = "message";
+
+            localStorage.setItem("username", data.userName);
+
+            setTimeout(() => closeModal("profileModal"), 1500);
+        } else {
+            msg.innerHTML = "❌ Failed to update profile";
+            msg.className = "message error";
+        }
+    } catch (error) {
+        msg.innerHTML = "❌ Network error";
+        msg.className = "message error";
+    }
+}
+
+async function deleteAccount() {
+    let userId = localStorage.getItem("userId");
+    if (!userId) {
+        alert("❌ User ID not found. Please log in again.");
+        return;
+    }
+
+    if (!confirm("⚠️ Are you sure you want to delete your account? This cannot be undone.")) return;
+
+    try {
+        let response = await fetch("http://localhost:8082/user/delete/" + userId, {
+            method: "DELETE"
+        });
+
+        if (response.ok) {
+            alert("Account deleted successfully.");
+            localStorage.removeItem("username");
+            localStorage.removeItem("userId");
+            window.location.href = "Login.html";
+        } else {
+            alert("❌ Failed to delete account.");
+        }
+    } catch (error) {
+        alert("❌ Network error.");
+    }
+}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Chat App Dashboard</title>
@@ -10,145 +11,190 @@
     <!-- CSS -->
     <link rel="stylesheet" href="Dashboard.css">
 </head>
+
 <body>
 
-<div class="dashboard-container">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h3>Chat App</h3>
-            <button class="logout-btn" onclick="logoutUser()">
-                <i class="fa fa-sign-out"></i>
-            </button>
-        </div>
-
-        <div class="user-info">
-            <i class="fa fa-user-circle"></i>
-            <span id="currentUser">User</span>
-        </div>
-
-        <div class="search-box">
-            <i class="fa fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Search contacts..." onkeyup="searchContacts()">
-        </div>
-
-        <div class="sidebar-tabs">
-            <button class="tab-btn active" onclick="switchTab('contacts')">
-                <i class="fa fa-users"></i> Contacts
-            </button>
-            <button class="tab-btn" onclick="switchTab('rooms')">
-                <i class="fa fa-door-open"></i> Rooms
-            </button>
-        </div>
-
-        <!-- Contacts Section -->
-        <div id="contactsTab" class="tab-content active">
-            <div class="section-header">
-                <h4>Your Contacts</h4>
-                <button class="add-btn" onclick="openAddContact()">
-                    <i class="fa fa-plus"></i>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>Chat App</h3>
+                <button class="logout-btn" onclick="logoutUser()">
+                    <i class="fa fa-sign-out"></i>
                 </button>
             </div>
-            <div id="contactsList" class="contacts-list">
-                <p class="empty-message">No contacts yet. Add a contact to start chatting!</p>
-            </div>
-        </div>
 
-        <!-- Rooms Section -->
-        <div id="roomsTab" class="tab-content">
-            <div class="section-header">
-                <h4>Chat Rooms</h4>
-                <button class="add-btn" onclick="openCreateRoom()">
-                    <i class="fa fa-plus"></i>
+            <div class="user-info">
+                <i class="fa fa-user-circle"></i>
+                <span id="currentUser">User</span>
+                <button class="icon-btn" onclick="openProfileModal()" style="margin-left: auto;">
+                    <i class="fa fa-cog"></i>
+                </button>
+
+            </div>
+
+            <div class="search-box">
+                <i class="fa fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search contacts..." onkeyup="searchContacts()">
+            </div>
+
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" onclick="switchTab('contacts')">
+                    <i class="fa fa-users"></i> Contacts
+                </button>
+                <button class="tab-btn" onclick="switchTab('rooms')">
+                    <i class="fa fa-door-open"></i> Rooms
                 </button>
             </div>
-            <div id="roomsList" class="rooms-list">
-                <p class="empty-message">No rooms joined yet. Create or join a room!</p>
-            </div>
-        </div>
-    </div>
 
-    <!-- Main Chat Area -->
-    <div class="chat-area">
-        <div id="noChatSelected" class="no-chat-selected">
-            <i class="fa fa-comments"></i>
-            <h2>Select a Contact or Room</h2>
-            <p>Choose a contact from the left to start chatting, or join a room to chat with multiple users.</p>
-        </div>
-
-        <div id="chatWindow" class="chat-window" style="display: none;">
-            <div class="chat-header">
-                <h3 id="chatTitle">Chat</h3>
-                <div class="chat-header-actions">
-                    <button class="icon-btn" onclick="showInfo()">
-                        <i class="fa fa-info-circle"></i>
+            <!-- Contacts Section -->
+            <div id="contactsTab" class="tab-content active">
+                <div class="section-header">
+                    <h4>Your Contacts</h4>
+                    <button class="add-btn" onclick="openAddContact()">
+                        <i class="fa fa-plus"></i>
                     </button>
-                    <button class="icon-btn" onclick="closeChat()">
-                        <i class="fa fa-times"></i>
-                    </button>
+                </div>
+                <div id="contactsList" class="contacts-list">
+                    <p class="empty-message">No contacts yet. Add a contact to start chatting!</p>
                 </div>
             </div>
 
-            <div id="messagesArea" class="messages-area">
-                <p class="empty-message">Start the conversation!</p>
+            <!-- Rooms Section -->
+            <div id="roomsTab" class="tab-content">
+                <div class="section-header">
+                    <h4>Chat Rooms</h4>
+                    <button class="add-btn" onclick="openCreateRoom()">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+                <div id="roomsList" class="rooms-list">
+                    <p class="empty-message">No rooms joined yet. Create or join a room!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-area">
+            <div id="noChatSelected" class="no-chat-selected">
+                <i class="fa fa-comments"></i>
+                <h2>Select a Contact or Room</h2>
+                <p>Choose a contact from the left to start chatting, or join a room to chat with multiple users.</p>
             </div>
 
-            <div class="message-input-area">
-                <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
-                <button class="send-btn" onclick="sendMessage()">
-                    <i class="fa fa-paper-plane"></i>
-                </button>
+            <div id="chatWindow" class="chat-window" style="display: none;">
+                <div class="chat-header">
+                    <h3 id="chatTitle">Chat</h3>
+                    <div class="chat-header-actions">
+                        <button class="icon-btn" onclick="showInfo()">
+                            <i class="fa fa-info-circle"></i>
+                        </button>
+                        <button class="icon-btn" onclick="closeChat()">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="messagesArea" class="messages-area">
+                    <p class="empty-message">Start the conversation!</p>
+                </div>
+
+                <div class="message-input-area">
+                    <input type="text" id="messageInput" placeholder="Type your message..."
+                        onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i class="fa fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Add Contact Modal -->
-<div id="addContactModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('addContactModal')">&times;</span>
-        <h2>Add Contact</h2>
-        <div class="input-box">
-            <i class="fa fa-user"></i>
-            <input type="text" id="contactUsername" placeholder="Enter username">
+    <!-- Add Contact Modal -->
+    <div id="addContactModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addContactModal')">&times;</span>
+            <h2>Add Contact</h2>
+            <div class="input-box">
+                <i class="fa fa-user"></i>
+                <input type="text" id="contactUsername" placeholder="Enter username">
+            </div>
+            <button class="modal-btn" onclick="addContact()">Add Contact</button>
+            <div id="contactMsg" class="message"></div>
         </div>
-        <button class="modal-btn" onclick="addContact()">Add Contact</button>
-        <div id="contactMsg" class="message"></div>
     </div>
-</div>
 
-<!-- Create Room Modal -->
-<div id="createRoomModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('createRoomModal')">&times;</span>
-        <h2>Create Room</h2>
-        <div class="input-box">
-            <i class="fa fa-door-open"></i>
-            <input type="text" id="roomName" placeholder="Room name">
+    <!-- Create Room Modal -->
+    <div id="createRoomModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createRoomModal')">&times;</span>
+            <h2>Create Room</h2>
+            <div class="input-box">
+                <i class="fa fa-door-open"></i>
+                <input type="text" id="roomName" placeholder="Room name">
+            </div>
+            <div class="input-box">
+                <i class="fa fa-align-left"></i>
+                <textarea id="roomDesc" placeholder="Room description"
+                    style="width: 100%; border: none; outline: none; color: white; font-family: Arial; resize: none; height: 80px;"></textarea>
+            </div>
+            <button class="modal-btn" onclick="createRoom()">Create Room</button>
+            <div id="roomMsg" class="message"></div>
         </div>
-        <div class="input-box">
-            <i class="fa fa-align-left"></i>
-            <textarea id="roomDesc" placeholder="Room description" style="width: 100%; border: none; outline: none; color: white; font-family: Arial; resize: none; height: 80px;"></textarea>
-        </div>
-        <button class="modal-btn" onclick="createRoom()">Create Room</button>
-        <div id="roomMsg" class="message"></div>
     </div>
-</div>
 
-<!-- Join Room Modal -->
-<div id="joinRoomModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('joinRoomModal')">&times;</span>
-        <h2>Join Room</h2>
-        <div class="input-box">
-            <i class="fa fa-door-open"></i>
-            <input type="text" id="roomCode" placeholder="Enter room code">
+    <!-- Join Room Modal -->
+    <div id="joinRoomModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('joinRoomModal')">&times;</span>
+            <h2>Join Room</h2>
+            <div class="input-box">
+                <i class="fa fa-door-open"></i>
+                <input type="text" id="roomCode" placeholder="Enter room code">
+            </div>
+            <button class="modal-btn" onclick="joinRoom()">Join Room</button>
+            <div id="joinMsg" class="message"></div>
         </div>
-        <button class="modal-btn" onclick="joinRoom()">Join Room</button>
-        <div id="joinMsg" class="message"></div>
     </div>
-</div>
 
-<script src="dashboard.js"></script>
+    <!-- Profile Modal -->
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('profileModal')">&times;</span>
+            <h2>My Profile</h2>
+
+            <!-- Show User ID -->
+            <p id="profileUserId" class="profile-id"></p>
+
+            <div class="input-box">
+                <i class="fa fa-user"></i>
+                <input type="text" id="profileUsername" placeholder="Username" />
+            </div>
+
+            <div class="input-box">
+                <i class="fa fa-envelope"></i>
+                <input type="email" id="profileEmail" placeholder="Email" />
+            </div>
+
+            <div class="input-box">
+                <i class="fa fa-phone"></i>
+                <input type="tel" id="profilePhone" placeholder="Phone Number" />
+            </div>
+
+            <div class="input-box">
+                <i class="fa fa-lock"></i>
+                <input type="password" id="profilePassword" placeholder="New Password" />
+            </div>
+
+            <button class="modal-btn" onclick="updateProfile()">Update Profile</button>
+            <button class="modal-btn" style="background-color: red;" onclick="deleteAccount()">Delete Account</button>
+
+            <div id="profileMsg" class="message"></div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
 </body>
+
 </html>
