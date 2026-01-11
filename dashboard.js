@@ -1,345 +1,82 @@
-// Sample data for contacts and rooms
-let contacts = [
-    { id: 1, username: "john_doe", status: "online" },
-    { id: 2, username: "jane_smith", status: "offline" },
-    { id: 3, username: "mike_johnson", status: "online" }
-];
+const API_BASE_URL = "http://localhost:8082";
+let currentChatUser = null; // Stores the user currently opened in chat
+let tempFoundUser = null;   // Stores the user found in the Add Contact modal
 
-let rooms = [
-    { id: 1, name: "General Chat", members: 15, code: "GEN001" },
-    { id: 2, name: "Tech Discussion", members: 8, code: "TECH001" },
-    { id: 3, name: "Gaming Zone", members: 12, code: "GAME001" }
-];
+// ================= INITIALIZATION =================
+window.onload = function () {
+    const userId = localStorage.getItem("userId");
+    const username = localStorage.getItem("username");
 
-let messages = {
-    contact_1: [
-        { text: "Hey! How are you?", type: "received" },
-        { text: "I'm doing great! How about you?", type: "sent" }
-    ],
-    contact_2: [],
-    room_1: [
-        { text: "Welcome to General Chat!", type: "received" },
-        { text: "Thanks! Happy to be here", type: "sent" }
-    ]
-};
-
-let currentChat = null;
-let currentUser = localStorage.getItem("username") || "User";
-
-// Initialize dashboard on page load
-window.onload = function() {
-    document.getElementById("currentUser").textContent = currentUser;
-    loadContacts();
-    loadRooms();
-};
-
-// Load contacts list
-function loadContacts() {
-    let contactsList = document.getElementById("contactsList");
-    if (contacts.length === 0) {
-        contactsList.innerHTML = '<p class="empty-message">No contacts yet. Add a contact to start chatting!</p>';
+    if (!userId) {
+        window.location.href = "Login.html"; // Redirect if not logged in
         return;
     }
 
-    contactsList.innerHTML = "";
-    contacts.forEach(contact => {
-        let contactItem = document.createElement("div");
-        contactItem.className = "contact-item";
-        contactItem.onclick = () => openChat("contact", contact.id, contact.username);
-        
-        let statusClass = contact.status === "online" ? "fa-circle" : "fa-circle";
-        let statusColor = contact.status === "online" ? "#00ff99" : "#666";
-        
-        contactItem.innerHTML = `
-            <i class="fa fa-user-circle"></i>
-            <div class="contact-info">
-                <div class="contact-name">${contact.username}</div>
-                <div class="contact-status"><i class="fa ${statusClass}" style="color: ${statusColor}; font-size: 8px;"></i> ${contact.status}</div>
-            </div>
-        `;
-        
-        contactsList.appendChild(contactItem);
-    });
-}
+    // Set Header Info
+    document.getElementById("currentUser").textContent = username || "User";
+    document.getElementById("currentUserId").textContent = "ID: " + userId;
 
-// Load rooms list
-function loadRooms() {
-    let roomsList = document.getElementById("roomsList");
-    if (rooms.length === 0) {
-        roomsList.innerHTML = '<p class="empty-message">No rooms joined yet. Create or join a room!</p>';
-        return;
-    }
+    loadChats(); // Load contacts/chats
+};
 
-    roomsList.innerHTML = "";
-    rooms.forEach(room => {
-        let roomItem = document.createElement("div");
-        roomItem.className = "room-item";
-        roomItem.onclick = () => openChat("room", room.id, room.name);
+// ================= CHAT LIST LOGIC =================
+
+// 1. Fetch Contacts from Backend
+async function loadChats() {
+    let userId = localStorage.getItem("userId");
+    let chatList = document.getElementById("chatList");
+
+    try {
+        let response = await fetch(`${API_BASE_URL}/contacts/${userId}`);
         
-        roomItem.innerHTML = `
-            <i class="fa fa-door-open"></i>
-            <div class="room-info">
-                <div class="room-name">${room.name}</div>
-                <div class="room-members"><i class="fa fa-users"></i> ${room.members} members</div>
-            </div>
-        `;
-        
-        roomsList.appendChild(roomItem);
-    });
-}
+        if (!response.ok) {
+            chatList.innerHTML = `<p class="empty-message">❌ Failed to load chats</p>`;
+            return;
+        }
 
-// Switch between tabs
-function switchTab(tabName) {
-    // Hide all tabs
-    document.querySelectorAll(".tab-content").forEach(tab => {
-        tab.classList.remove("active");
-    });
-    
-    // Remove active class from all buttons
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.classList.remove("active");
-    });
-    
-    // Show selected tab
-    document.getElementById(tabName + "Tab").classList.add("active");
-    
-    // Add active class to clicked button
-    event.target.classList.add("active");
-}
+        let contacts = await response.json();
+        chatList.innerHTML = ""; // Clear list
 
-// Open chat window
-function openChat(type, id, name) {
-    currentChat = { type, id, name };
-    
-    // Update UI
-    document.getElementById("noChatSelected").style.display = "none";
-    document.getElementById("chatWindow").style.display = "flex";
-    document.getElementById("chatTitle").textContent = name;
-    
-    // Load messages
-    let messagesArea = document.getElementById("messagesArea");
-    let messageKey = `${type}_${id}`;
-    
-    messagesArea.innerHTML = "";
-    
-    if (messages[messageKey] && messages[messageKey].length > 0) {
-        messages[messageKey].forEach(msg => {
-            let msgElement = document.createElement("div");
-            msgElement.className = `message ${msg.type}`;
-            msgElement.textContent = msg.text;
-            messagesArea.appendChild(msgElement);
+        if (contacts.length === 0) {
+            chatList.innerHTML = `<p class="empty-message">No contacts yet.<br>Click 'Add New Contact' below.</p>`;
+            return;
+        }
+
+        // Render Contacts
+        contacts.forEach(c => {
+            let div = document.createElement("div");
+            div.className = "contact-item";
+            div.dataset.name = (c.userName || c.contactId).toString().toLowerCase(); // For search filtering
+
+            // Display Name Logic (Uses Name if available, otherwise ID)
+            let displayName = c.userName || `User ${c.contactId}`;
+
+            div.innerHTML = `
+                <i class="fa fa-user"></i>
+                <div class="contact-info">
+                    <div class="contact-name">${displayName}</div>
+                </div>
+            `;
+            
+            // Click to Open Chat
+            div.onclick = () => openChat(div, c.contactId, displayName);
+            
+            chatList.appendChild(div);
         });
-    } else {
-        messagesArea.innerHTML = '<p class="empty-message">Start the conversation!</p>';
-    }
-    
-    // Update active state in sidebar
-    document.querySelectorAll(".contact-item, .room-item").forEach(item => {
-        item.classList.remove("active");
-    });
-    event.currentTarget.classList.add("active");
-    
-    // Focus message input
-    document.getElementById("messageInput").focus();
-}
 
-// Send message
-function sendMessage() {
-    let messageInput = document.getElementById("messageInput");
-    let messageText = messageInput.value.trim();
-    
-    if (messageText === "" || !currentChat) return;
-    
-    let messagesArea = document.getElementById("messagesArea");
-    
-    // Clear empty message
-    let emptyMsg = messagesArea.querySelector(".empty-message");
-    if (emptyMsg) emptyMsg.remove();
-    
-    // Create message element
-    let msgElement = document.createElement("div");
-    msgElement.className = "message sent";
-    msgElement.textContent = messageText;
-    messagesArea.appendChild(msgElement);
-    
-    // Store message
-    let messageKey = `${currentChat.type}_${currentChat.id}`;
-    if (!messages[messageKey]) messages[messageKey] = [];
-    messages[messageKey].push({ text: messageText, type: "sent" });
-    
-    // Scroll to bottom
-    messagesArea.scrollTop = messagesArea.scrollHeight;
-    
-    // Clear input
-    messageInput.value = "";
-    
-    // Simulate response after 1 second
-    setTimeout(() => {
-        let responseMsg = document.createElement("div");
-        responseMsg.className = "message received";
-        responseMsg.textContent = "Thanks for your message!";
-        messagesArea.appendChild(responseMsg);
-        
-        messages[messageKey].push({ text: "Thanks for your message!", type: "received" });
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-    }, 1000);
-}
-
-// Handle Enter key press
-function handleKeyPress(event) {
-    if (event.key === "Enter") {
-        sendMessage();
+    } catch (error) {
+        console.error("Error loading chats:", error);
+        chatList.innerHTML = `<p class="empty-message">❌ Network error</p>`;
     }
 }
 
-// Close chat
-function closeChat() {
-    currentChat = null;
-    document.getElementById("noChatSelected").style.display = "flex";
-    document.getElementById("chatWindow").style.display = "none";
-    document.querySelectorAll(".contact-item, .room-item").forEach(item => {
-        item.classList.remove("active");
-    });
-}
+// 2. Filter Chats (Search Bar)
+function filterChats() {
+    let input = document.getElementById("searchChatsInput").value.toLowerCase();
+    let items = document.querySelectorAll(".contact-item");
 
-// Open add contact modal
-function openAddContact() {
-    document.getElementById("addContactModal").classList.add("show");
-}
-
-// Open create room modal
-function openCreateRoom() {
-    document.getElementById("createRoomModal").classList.add("show");
-}
-
-// Open join room modal
-function openJoinRoom() {
-    document.getElementById("joinRoomModal").classList.add("show");
-}
-
-// Close modal
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove("show");
-}
-
-// Add contact
-function addContact() {
-    let username = document.getElementById("contactUsername").value.trim();
-    let msg = document.getElementById("contactMsg");
-    
-    if (username === "") {
-        msg.innerHTML = "❌ Please enter username";
-        msg.className = "message error";
-        return;
-    }
-    
-    // Check if contact already exists
-    if (contacts.some(c => c.username === username)) {
-        msg.innerHTML = "❌ Contact already exists";
-        msg.className = "message error";
-        return;
-    }
-    
-    // Add new contact
-    contacts.push({
-        id: contacts.length + 1,
-        username: username,
-        status: "offline"
-    });
-    
-    msg.innerHTML = "✅ Contact added successfully!";
-    msg.className = "message";
-    
-    document.getElementById("contactUsername").value = "";
-    
-    setTimeout(() => {
-        closeModal("addContactModal");
-        loadContacts();
-    }, 1500);
-}
-
-// Create room
-function createRoom() {
-    let roomName = document.getElementById("roomName").value.trim();
-    let roomDesc = document.getElementById("roomDesc").value.trim();
-    let msg = document.getElementById("roomMsg");
-    
-    if (roomName === "") {
-        msg.innerHTML = "❌ Please enter room name";
-        msg.className = "message error";
-        return;
-    }
-    
-    // Check if room already exists
-    if (rooms.some(r => r.name === roomName)) {
-        msg.innerHTML = "❌ Room already exists";
-        msg.className = "message error";
-        return;
-    }
-    
-    // Generate room code
-    let roomCode = "ROOM" + Math.floor(Math.random() * 10000);
-    
-    // Add new room
-    rooms.push({
-        id: rooms.length + 1,
-        name: roomName,
-        members: 1,
-        code: roomCode,
-        description: roomDesc
-    });
-    
-    msg.innerHTML = "✅ Room created successfully! Code: " + roomCode;
-    msg.className = "message";
-    
-    document.getElementById("roomName").value = "";
-    document.getElementById("roomDesc").value = "";
-    
-    setTimeout(() => {
-        closeModal("createRoomModal");
-        loadRooms();
-    }, 1500);
-}
-
-// Join room
-function joinRoom() {
-    let roomCode = document.getElementById("roomCode").value.trim();
-    let msg = document.getElementById("joinMsg");
-    
-    if (roomCode === "") {
-        msg.innerHTML = "❌ Please enter room code";
-        msg.className = "message error";
-        return;
-    }
-    
-    // Find room by code
-    let room = rooms.find(r => r.code === roomCode);
-    
-    if (!room) {
-        msg.innerHTML = "❌ Invalid room code";
-        msg.className = "message error";
-        return;
-    }
-    
-    msg.innerHTML = "✅ Joined " + room.name + " successfully!";
-    msg.className = "message";
-    
-    document.getElementById("roomCode").value = "";
-    
-    setTimeout(() => {
-        closeModal("joinRoomModal");
-        loadRooms();
-    }, 1500);
-}
-
-// Search contacts
-function searchContacts() {
-    let searchInput = document.getElementById("searchInput").value.toLowerCase();
-    let contactItems = document.querySelectorAll(".contact-item");
-    
-    contactItems.forEach(item => {
-        let contactName = item.querySelector(".contact-name").textContent.toLowerCase();
-        if (contactName.includes(searchInput)) {
+    items.forEach(item => {
+        if (item.dataset.name.includes(input)) {
             item.style.display = "flex";
         } else {
             item.style.display = "none";
@@ -347,44 +84,153 @@ function searchContacts() {
     });
 }
 
-// Show chat info
-function showInfo() {
-    if (!currentChat) return;
-    alert(`Chat: ${currentChat.name}\nType: ${currentChat.type}`);
+// ================= CHAT WINDOW LOGIC =================
+
+function openChat(element, contactId, contactName) {
+    // Highlight selected contact
+    document.querySelectorAll(".contact-item").forEach(item => item.classList.remove("active"));
+    element.classList.add("active");
+
+    // Show Chat Window
+    document.getElementById("noChatSelected").style.display = "none";
+    document.getElementById("chatWindow").style.display = "flex";
+    
+    // Set Chat Header
+    document.getElementById("chatTitle").textContent = contactName;
+    currentChatUser = { id: contactId, name: contactName };
+
+    // Clear and Load Messages (Fake for now, until backend Message logic is added)
+    let messagesArea = document.getElementById("messagesArea");
+    messagesArea.innerHTML = `<p class="empty-message">Start messaging with ${contactName}</p>`;
 }
 
-// Logout user
+function closeChat() {
+    currentChatUser = null;
+    document.getElementById("chatWindow").style.display = "none";
+    document.getElementById("noChatSelected").style.display = "flex";
+    document.querySelectorAll(".contact-item").forEach(item => item.classList.remove("active"));
+}
+
+function sendMessage() {
+    let input = document.getElementById("messageInput");
+    let text = input.value.trim();
+    if (!text || !currentChatUser) return;
+
+    let area = document.getElementById("messagesArea");
+    
+    // Remove "empty" message if it exists
+    if(area.querySelector(".empty-message")) area.innerHTML = "";
+
+    // Append Sent Message (Optimistic UI)
+    let msgDiv = document.createElement("div");
+    msgDiv.className = "message sent";
+    msgDiv.textContent = text;
+    area.appendChild(msgDiv);
+    
+    // Scroll to bottom
+    area.scrollTop = area.scrollHeight;
+    input.value = "";
+
+    // TODO: Connect this to MessageController backend later
+}
+
+function handleKeyPress(event) {
+    if (event.key === "Enter") sendMessage();
+}
+
+// ================= ADD CONTACT LOGIC (Global Search) =================
+
+function openAddContactModal() {
+    document.getElementById("addContactModal").classList.add("show");
+    document.getElementById("searchResults").style.display = "none";
+    document.getElementById("globalSearchInput").value = "";
+    document.getElementById("addContactMsg").textContent = "";
+}
+
+async function searchGlobalUser() {
+    let username = document.getElementById("globalSearchInput").value.trim();
+    let msg = document.getElementById("addContactMsg");
+    let resultArea = document.getElementById("searchResults");
+
+    if (!username) {
+        msg.textContent = "Please enter a username";
+        return;
+    }
+
+    try {
+        let response = await fetch(`${API_BASE_URL}/user/users/find?username=${username}`);
+        
+        if (response.ok) {
+            let user = await response.json();
+            
+            // Show result
+            tempFoundUser = user; // Store found user data
+            resultArea.style.display = "block";
+            document.getElementById("foundUserName").textContent = user.userName; // Assuming 'userName' is in JSON
+            msg.textContent = "";
+        } else {
+            resultArea.style.display = "none";
+            msg.textContent = "❌ User not found";
+            msg.className = "message error";
+        }
+    } catch (error) {
+        console.error(error);
+        msg.textContent = "❌ Network Error";
+    }
+}
+
+async function addFoundUser() {
+    if (!tempFoundUser) return;
+
+    let userId = localStorage.getItem("userId");
+    let contactId = tempFoundUser.id; // The ID of the user we found
+    let msg = document.getElementById("addContactMsg");
+
+    try {
+        let response = await fetch(`${API_BASE_URL}/contacts/add?userId=${userId}&contactId=${contactId}`, {
+            method: "POST"
+        });
+
+        if (response.ok) {
+            msg.textContent = "✅ Contact added!";
+            msg.className = "message";
+            
+            // Reload sidebar list
+            loadChats();
+            
+            setTimeout(() => closeModal('addContactModal'), 1000);
+        } else {
+            msg.textContent = "❌ Failed to add (maybe already added?)";
+            msg.className = "message error";
+        }
+    } catch (error) {
+        msg.textContent = "❌ Error adding contact";
+    }
+}
+
+// ================= UTILS & EXISTING USER LOGIC =================
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove("show");
+}
+
 function logoutUser() {
-    if (confirm("Are you sure you want to logout?")) {
-        localStorage.removeItem("username");
+    if (confirm("Logout?")) {
+        localStorage.clear();
         window.location.href = "Login.html";
     }
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    let modals = document.querySelectorAll(".modal.show");
-    modals.forEach(modal => {
-        if (event.target === modal) {
-            modal.classList.remove("show");
-        }
-    });
-};
+// === EXISTING PROFILE LOGIC (Preserved as requested) ===
 
-// profile model 
 function openProfileModal() {
     document.getElementById("profileModal").classList.add("show");
-
-    // Display User ID
     let userId = localStorage.getItem("userId");
-    if (userId) {
-        document.getElementById("profileUserId").textContent = "User ID: " + userId;
-    }
+    if (userId) document.getElementById("profileUserId").textContent = "User ID: " + userId;
 
-    // Pre-fill user details from backend
     let username = localStorage.getItem("username");
     if (username) {
-        fetch("http://localhost:8082/user/details?username=" + username)
+        fetch(`${API_BASE_URL}/user/details?username=${username}`)
             .then(res => res.json())
             .then(data => {
                 document.getElementById("profileUsername").value = data.userName;
@@ -398,13 +244,7 @@ function openProfileModal() {
 async function updateProfile() {
     let msg = document.getElementById("profileMsg");
     let userId = localStorage.getItem("userId");
-
-    if (!userId) {
-        msg.innerHTML = "❌ User ID not found. Please log in again.";
-        msg.className = "message error";
-        return;
-    }
-
+    
     let updatedUser = {
         userName: document.getElementById("profileUsername").value,
         email: document.getElementById("profileEmail").value,
@@ -413,7 +253,7 @@ async function updateProfile() {
     };
 
     try {
-        let response = await fetch(`http://localhost:8082/user/update/${userId}`, {
+        let response = await fetch(`${API_BASE_URL}/user/update/${userId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedUser)
@@ -421,45 +261,34 @@ async function updateProfile() {
 
         if (response.ok) {
             let data = await response.json();
-            msg.innerHTML = "✅ Profile updated successfully!";
+            msg.innerHTML = "✅ Profile updated!";
             msg.className = "message";
-
             localStorage.setItem("username", data.userName);
-
+            document.getElementById("currentUser").textContent = data.userName; // Update header immediately
             setTimeout(() => closeModal("profileModal"), 1500);
         } else {
-            msg.innerHTML = "❌ Failed to update profile";
+            msg.innerHTML = "❌ Failed to update";
             msg.className = "message error";
         }
     } catch (error) {
         msg.innerHTML = "❌ Network error";
-        msg.className = "message error";
     }
 }
 
 async function deleteAccount() {
     let userId = localStorage.getItem("userId");
-    if (!userId) {
-        alert("❌ User ID not found. Please log in again.");
-        return;
-    }
-
-    if (!confirm("⚠️ Are you sure you want to delete your account? This cannot be undone.")) return;
+    if (!confirm("⚠️ Delete account permanently?")) return;
 
     try {
-        let response = await fetch("http://localhost:8082/user/delete/" + userId, {
-            method: "DELETE"
-        });
-
+        let response = await fetch(`${API_BASE_URL}/user/delete/${userId}`, { method: "DELETE" });
         if (response.ok) {
-            alert("Account deleted successfully.");
-            localStorage.removeItem("username");
-            localStorage.removeItem("userId");
+            alert("Account deleted.");
+            localStorage.clear();
             window.location.href = "Login.html";
         } else {
-            alert("❌ Failed to delete account.");
+            alert("Failed to delete.");
         }
     } catch (error) {
-        alert("❌ Network error.");
+        alert("Network error.");
     }
 }
