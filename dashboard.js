@@ -1,6 +1,7 @@
 const API_BASE_URL = "http://localhost:8082";
 let currentChatUser = null; // Stores the user currently opened in chat
 let tempFoundUser = null;   // Stores the user found in the Add Contact modal
+let chatPollInterval = null; // <--- ADD THIS LINE
 
 // ================= INITIALIZATION =================
 window.onload = function () {
@@ -87,51 +88,124 @@ function filterChats() {
 // ================= CHAT WINDOW LOGIC =================
 
 function openChat(element, contactId, contactName) {
-    // Highlight selected contact
+    // 1. Highlight selected contact
     document.querySelectorAll(".contact-item").forEach(item => item.classList.remove("active"));
     element.classList.add("active");
 
-    // Show Chat Window
+    // 2. Show Chat Window
     document.getElementById("noChatSelected").style.display = "none";
     document.getElementById("chatWindow").style.display = "flex";
     
-    // Set Chat Header
+    // 3. Set Chat Header
     document.getElementById("chatTitle").textContent = contactName;
     currentChatUser = { id: contactId, name: contactName };
 
-    // Clear and Load Messages (Fake for now, until backend Message logic is added)
+    // 4. Reset Area
     let messagesArea = document.getElementById("messagesArea");
-    messagesArea.innerHTML = `<p class="empty-message">Start messaging with ${contactName}</p>`;
-}
+    messagesArea.innerHTML = "Loading...";
 
+    // 5. STOP any previous polling (so we don't have double timers)
+    if (chatPollInterval) clearInterval(chatPollInterval);
+
+    // 6. Initial Load & START Polling
+    fetchMessages(); // Run once immediately
+    chatPollInterval = setInterval(fetchMessages, 2000); // Run every 2 seconds
+}
 function closeChat() {
     currentChatUser = null;
+    
+    // STOP Polling
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    
     document.getElementById("chatWindow").style.display = "none";
     document.getElementById("noChatSelected").style.display = "flex";
     document.querySelectorAll(".contact-item").forEach(item => item.classList.remove("active"));
 }
 
-function sendMessage() {
+async function sendMessage() {
     let input = document.getElementById("messageInput");
     let text = input.value.trim();
+    let userId = localStorage.getItem("userId");
+
     if (!text || !currentChatUser) return;
 
-    let area = document.getElementById("messagesArea");
+    // 1. Prepare Message Object
+    let messageData = {
+        senderId: userId,
+        receiverId: currentChatUser.id,
+        content: text
+    };
+
+    // 2. Optimistic UI (Show message immediately before server confirms)
+    displayMessage({ senderId: userId, content: text }, userId);
+    
+    let messagesArea = document.getElementById("messagesArea");
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+    input.value = ""; // Clear input
+
+    // 3. Send to Backend
+    try {
+        let response = await fetch(`${API_BASE_URL}/messages/send`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(messageData)
+        });
+
+        if (!response.ok) {
+            console.error("Failed to send message");
+            // Optional: You could show a red error icon next to the message here
+        }
+    } catch (error) {
+        console.error("Network error sending message:", error);
+    }
+}
+
+
+function displayMessage(msg, currentUserId) {
+    let messagesArea = document.getElementById("messagesArea");
     
     // Remove "empty" message if it exists
-    if(area.querySelector(".empty-message")) area.innerHTML = "";
+    let emptyMsg = messagesArea.querySelector(".empty-message");
+    if (emptyMsg) emptyMsg.remove();
 
-    // Append Sent Message (Optimistic UI)
-    let msgDiv = document.createElement("div");
-    msgDiv.className = "message sent";
-    msgDiv.textContent = text;
-    area.appendChild(msgDiv);
+    let div = document.createElement("div");
     
-    // Scroll to bottom
-    area.scrollTop = area.scrollHeight;
-    input.value = "";
+    // Check if I sent it or received it
+    // Note: We compare as strings/numbers loosely just in case
+    let isSent = (msg.senderId == currentUserId);
+    
+    div.className = isSent ? "message sent" : "message received";
+    div.textContent = msg.content;
+    
+    messagesArea.appendChild(div);
+}
 
-    // TODO: Connect this to MessageController backend later
+async function fetchMessages() {
+    if (!currentChatUser) return;
+
+    let userId = localStorage.getItem("userId");
+    try {
+        // Fetch latest history
+        let response = await fetch(`${API_BASE_URL}/messages/history/${userId}/${currentChatUser.id}`);
+        let messages = await response.json();
+
+        let messagesArea = document.getElementById("messagesArea");
+
+        // Simple logic: If message count changed, update the UI
+        // (For a perfect app, you'd check IDs, but this is fine for now)
+        let currentCount = messagesArea.getElementsByClassName("message").length;
+        
+        if (messages.length > currentCount) {
+             messagesArea.innerHTML = ""; // Clear and rebuild
+             messages.forEach(msg => {
+                displayMessage(msg, userId);
+            });
+            messagesArea.scrollTop = messagesArea.scrollHeight; // Auto-scroll to bottom
+        }
+
+    } catch (error) {
+        console.error("Auto-fetch failed", error);
+    }
 }
 
 function handleKeyPress(event) {
