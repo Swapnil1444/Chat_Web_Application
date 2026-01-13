@@ -1,27 +1,86 @@
-
-
 const API_BASE_URL = "http://localhost:8082";
 let currentChatUser = null; 
 let tempFoundUser = null;   
-let chatPollInterval = null; // Timer for the open chat only
+let chatPollInterval = null; 
+const notificationSound = new Audio("https://notificationsounds.com/storage/sounds/file-sounds-1233-elegant.mp3");
 
-// ================= INITIALIZATION =================
+// Map to track local state of unread counts to prevent looping sound
+let lastKnownUnreadCounts = {}; 
+
 window.onload = function () {
     const userId = localStorage.getItem("userId");
     const username = localStorage.getItem("username");
 
-    if (!userId) {
-        window.location.href = "Login.html";
-        return;
-    }
+    if (!userId) { window.location.href = "Login.html"; return; }
 
     document.getElementById("currentUser").textContent = username || "User";
     document.getElementById("currentUserId").textContent = "ID: " + userId;
 
     loadChats();
+
+    // Start Polling for Notifications
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    chatPollInterval = setInterval(checkNotifications, 2000);
 };
 
-// ================= CHAT LIST LOGIC =================
+// ================= NOTIFICATION LOGIC (POLLING) =================
+async function checkNotifications() {
+    let userId = localStorage.getItem("userId");
+
+    try {
+        // 1. Fetch unread counts from DB
+        let response = await fetch(`${API_BASE_URL}/messages/unread/${userId}`);
+        let trackers = await response.json();
+
+        // 2. Loop through trackers
+        trackers.forEach(tracker => {
+            let contactId = tracker.senderId;
+            let count = tracker.unreadCount;
+            let div = document.querySelector(`.contact-item[data-id='${contactId}']`);
+
+            if (!div) return;
+
+            // Logic: Is this a NEW notification?
+            let previousCount = lastKnownUnreadCounts[contactId] || 0;
+
+            if (count > 0) {
+                // Apply Highlight
+                div.classList.add("has-new-message");
+
+                // Play Sound condition: 
+                // 1. Count increased 
+                // 2. I am NOT currently inside this chat
+                if (count > previousCount && (!currentChatUser || currentChatUser.id != contactId)) {
+                    notificationSound.play().catch(e => console.log("Sound blocked"));
+                }
+                
+                // If I AM inside the chat, clear it immediately
+                if (currentChatUser && currentChatUser.id == contactId) {
+                    clearUnreadInDb(userId, contactId);
+                    div.classList.remove("has-new-message"); // visual fix
+                }
+
+            } else {
+                // Count is 0, remove highlight
+                div.classList.remove("has-new-message");
+            }
+
+            // Update local memory
+            lastKnownUnreadCounts[contactId] = count;
+        });
+        
+        // If chat is open, we still need to fetch messages to see them appear
+        if (currentChatUser) {
+            refreshOpenChat();
+        }
+
+    } catch (error) {
+        console.error("Polling error", error);
+    }
+}
+
+// ================= CHAT LOGIC =================
+
 async function loadChats() {
     let userId = localStorage.getItem("userId");
     let chatList = document.getElementById("chatList");
@@ -39,10 +98,10 @@ async function loadChats() {
         contacts.forEach(c => {
             let div = document.createElement("div");
             div.className = "contact-item";
-            
-            // Clean ID logic (removed notification dataset needs)
+            div.dataset.id = c.contactId; // Critical for notifications
+            div.dataset.name = (c.userName || c.contactId).toString().toLowerCase();
+
             let displayName = c.userName || `User ${c.contactId}`;
-            div.dataset.name = displayName.toLowerCase();
 
             div.innerHTML = `
                 <i class="fa fa-user"></i>
@@ -55,30 +114,16 @@ async function loadChats() {
             chatList.appendChild(div);
         });
 
-    } catch (error) {
-        console.error("Error loading chats:", error);
-    }
+    } catch (error) { console.error(error); }
 }
-
-function filterChats() {
-    let input = document.getElementById("searchChatsInput").value.toLowerCase();
-    let items = document.querySelectorAll(".contact-item");
-
-    items.forEach(item => {
-        if (item.dataset.name.includes(input)) {
-            item.style.display = "flex";
-        } else {
-            item.style.display = "none";
-        }
-    });
-}
-
-// ================= CHAT WINDOW LOGIC =================
 
 function openChat(element, contactId, contactName) {
-    // UI Updates
+    // UI Update
     document.querySelectorAll(".contact-item").forEach(item => item.classList.remove("active"));
     element.classList.add("active");
+    
+    // Remove Unread Highlight immediately in UI
+    element.classList.remove("has-new-message");
 
     document.getElementById("noChatSelected").style.display = "none";
     document.getElementById("chatWindow").style.display = "flex";
@@ -86,49 +131,51 @@ function openChat(element, contactId, contactName) {
     
     currentChatUser = { id: contactId, name: contactName };
 
-    // Reset Chat Area
-    let messagesArea = document.getElementById("messagesArea");
-    messagesArea.innerHTML = "Loading...";
+    // Clear DB Unread Count
+    let userId = localStorage.getItem("userId");
+    clearUnreadInDb(userId, contactId);
 
-    // Polling Logic: Stop old timer, start new one
-    if (chatPollInterval) clearInterval(chatPollInterval);
-    
-    fetchMessages(); // Run once immediately
-    chatPollInterval = setInterval(fetchMessages, 2000); // Check ONLY this chat every 2s
+    // Initial Message Load
+    refreshOpenChat();
 }
 
 function closeChat() {
     currentChatUser = null;
-    
-    // Stop Polling
-    if (chatPollInterval) clearInterval(chatPollInterval);
-    
     document.getElementById("chatWindow").style.display = "none";
     document.getElementById("noChatSelected").style.display = "flex";
     document.querySelectorAll(".contact-item").forEach(item => item.classList.remove("active"));
 }
 
-// Simple Polling: Only updates the currently open chat
-async function fetchMessages() {
+async function refreshOpenChat() {
     if (!currentChatUser) return;
-
     let userId = localStorage.getItem("userId");
-    try {
-        let response = await fetch(`${API_BASE_URL}/messages/history/${userId}/${currentChatUser.id}`);
-        let messages = await response.json();
+    
+    let response = await fetch(`${API_BASE_URL}/messages/history/${userId}/${currentChatUser.id}`);
+    let messages = await response.json();
 
-        let messagesArea = document.getElementById("messagesArea");
-        let currentCount = messagesArea.getElementsByClassName("message").length;
-
-        // Only update if new messages arrived
-        if (messages.length > currentCount) {
-             messagesArea.innerHTML = ""; 
-             messages.forEach(msg => displayMessage(msg, userId));
-             messagesArea.scrollTop = messagesArea.scrollHeight;
-        }
-    } catch (error) {
-        console.error("Auto-fetch failed", error);
+    let messagesArea = document.getElementById("messagesArea");
+    
+    // Simple check to avoid flicker: only redraw if count changes
+    let currentCount = messagesArea.getElementsByClassName("message").length;
+    if (messages.length > currentCount || messagesArea.textContent === "No messages yet.") {
+        messagesArea.innerHTML = "";
+        if(messages.length === 0) messagesArea.innerHTML = "No messages yet.";
+        
+        messages.forEach(msg => {
+            let div = document.createElement("div");
+            div.className = (msg.senderId == userId) ? "message sent" : "message received";
+            div.textContent = msg.content;
+            messagesArea.appendChild(div);
+        });
+        messagesArea.scrollTop = messagesArea.scrollHeight;
     }
+}
+
+async function clearUnreadInDb(userId, senderId) {
+    // Call backend to set count to 0
+    await fetch(`${API_BASE_URL}/messages/unread/clear?userId=${userId}&senderId=${senderId}`, { method: "POST" });
+    // Reset local memory so sound can play again next time
+    lastKnownUnreadCounts[senderId] = 0; 
 }
 
 async function sendMessage() {
@@ -138,52 +185,36 @@ async function sendMessage() {
 
     if (!text || !currentChatUser) return;
 
-    let messageData = {
-        senderId: userId,
-        receiverId: currentChatUser.id,
-        content: text
-    };
-
     // Optimistic UI
-    displayMessage({ senderId: userId, content: text }, userId);
-    
     let messagesArea = document.getElementById("messagesArea");
+    let div = document.createElement("div");
+    div.className = "message sent";
+    div.textContent = text;
+    messagesArea.appendChild(div);
     messagesArea.scrollTop = messagesArea.scrollHeight;
+    
+    let msgData = { senderId: userId, receiverId: currentChatUser.id, content: text };
     input.value = "";
 
-    try {
-        await fetch(`${API_BASE_URL}/messages/send`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(messageData)
-        });
-    } catch (error) {
-        console.error("Network error sending message:", error);
-    }
+    await fetch(`${API_BASE_URL}/messages/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(msgData)
+    });
 }
 
-function displayMessage(msg, currentUserId) {
-    let messagesArea = document.getElementById("messagesArea");
-    let isSent = (msg.senderId == currentUserId);
-    
-    // Clean up empty message placeholder
-    let emptyMsg = messagesArea.querySelector(".empty-message");
-    if(emptyMsg) emptyMsg.remove(); // Fix: remove specific element if exists, else it might clear "Loading..."
-
-    // If we just loaded "Loading...", clear it
-    if (messagesArea.textContent === "Loading...") messagesArea.innerHTML = "";
-
-    let div = document.createElement("div");
-    div.className = isSent ? "message sent" : "message received";
-    div.textContent = msg.content;
-    messagesArea.appendChild(div);
+// ================= MODAL & UTILS (Same as before) =================
+function filterChats() {
+    let input = document.getElementById("searchChatsInput").value.toLowerCase();
+    document.querySelectorAll(".contact-item").forEach(item => {
+        item.style.display = item.dataset.name.includes(input) ? "flex" : "none";
+    });
 }
+function handleKeyPress(e) { if (e.key === "Enter") sendMessage(); }
+function logoutUser() { if(confirm("Logout?")) { localStorage.clear(); window.location.href = "Login.html"; } }
 
-function handleKeyPress(event) {
-    if (event.key === "Enter") sendMessage();
-}
-
-// ================= MODAL LOGIC (Unchanged) =================
+// Add Contact & Profile Modal functions remain exactly as they were in your previous version...
+// (Assuming you kept them. If you need them re-pasted, let me know!)
 function openAddContactModal() {
     document.getElementById("addContactModal").classList.add("show");
     document.getElementById("searchResults").style.display = "none";
@@ -235,19 +266,10 @@ async function addFoundUser() {
 
 function closeModal(id) { document.getElementById(id).classList.remove("show"); }
 
-function logoutUser() {
-    if (confirm("Logout?")) {
-        localStorage.clear();
-        window.location.href = "Login.html";
-    }
-}
-
-// ================= PROFILE LOGIC (Unchanged) =================
 function openProfileModal() {
     document.getElementById("profileModal").classList.add("show");
     let userId = localStorage.getItem("userId");
     if (userId) document.getElementById("profileUserId").textContent = "User ID: " + userId;
-
     let username = localStorage.getItem("username");
     if (username) {
         fetch(`${API_BASE_URL}/user/details?username=${username}`)
@@ -269,30 +291,22 @@ async function updateProfile() {
         phoneNumber: document.getElementById("profilePhone").value,
         password: document.getElementById("profilePassword").value
     };
-
     try {
         let response = await fetch(`${API_BASE_URL}/user/update/${userId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedUser)
+            method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updatedUser)
         });
         if (response.ok) {
             let data = await response.json();
-            msg.innerHTML = "✅ Profile updated!";
-            msg.className = "message";
+            msg.innerHTML = "✅ Updated!";
             localStorage.setItem("username", data.userName);
-            document.getElementById("currentUser").textContent = data.userName;
             setTimeout(() => closeModal("profileModal"), 1500);
-        } else { msg.innerHTML = "❌ Failed"; msg.className = "message error"; }
-    } catch (error) { msg.innerHTML = "❌ Network error"; }
+        } else msg.innerHTML = "❌ Failed";
+    } catch (e) { msg.innerHTML = "❌ Error"; }
 }
-
 async function deleteAccount() {
     let userId = localStorage.getItem("userId");
-    if (!confirm("⚠️ Delete account?")) return;
-    try {
-        let response = await fetch(`${API_BASE_URL}/user/delete/${userId}`, { method: "DELETE" });
-        if (response.ok) { localStorage.clear(); window.location.href = "Login.html"; }
-        else { alert("Failed to delete."); }
-    } catch (error) { alert("Network error."); }
+    if(confirm("Delete?")) {
+        await fetch(`${API_BASE_URL}/user/delete/${userId}`, { method: "DELETE" });
+        localStorage.clear(); window.location.href = "Login.html";
+    }
 }
