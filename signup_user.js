@@ -1,134 +1,54 @@
-// function signupUser() {
-//     let user = document.getElementById("signupUser").value;
-//     let email = document.getElementById("signupEmail").value;
-//     let phone = document.getElementById("signupPhone").value;
-//     let pass = document.getElementById("signupPass").value;
-//     let confirmPass = document.getElementById("signupConfirmPass").value;
-//     let msg = document.getElementById("signupMsg");
-
-//     // Validation
-//     if (user === "") {
-//         msg.innerHTML = "❌ Please enter username";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     if (email === "") {
-//         msg.innerHTML = "❌ Please enter email";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     if (!email.includes("@")) {
-//         msg.innerHTML = "❌ Please enter valid email";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     if (phone === "") {
-//         msg.innerHTML = "❌ Please enter phone number";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     // Validate phone number format (only digits, 10-15 digits)
-//     let phoneRegex = /^[0-9]{10,15}$/;
-//     if (!phoneRegex.test(phone)) {
-//         msg.innerHTML = "❌ Phone number must contain only digits and be 10-15 digits long";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     if (pass === "") {
-//         msg.innerHTML = "❌ Please enter password";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     if (pass.length < 6) {
-//         msg.innerHTML = "❌ Password must be at least 6 characters";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     if (pass !== confirmPass) {
-//         msg.innerHTML = "❌ Passwords do not match";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     // If all validations pass
-//     msg.innerHTML = "🎉 Sign up successful! Welcome " + user + "!";
-//     msg.className = "message";
-
-//     // Clear form fields
-//     document.getElementById("signupUser").value = "";
-//     document.getElementById("signupEmail").value = "";
-//     document.getElementById("signupPhone").value = "";
-//     document.getElementById("signupPass").value = "";
-//     document.getElementById("signupConfirmPass").value = "";
-// }
-
-
 async function signupUser() {
-    let user = document.getElementById("signupUser").value;
-    let email = document.getElementById("signupEmail").value;
-    let phone = document.getElementById("signupPhone").value;
-    let pass = document.getElementById("signupPass").value;
-    let confirmPass = document.getElementById("signupConfirmPass").value;
+    // 1. Get and Clean Inputs (Trim spaces)
+    let user = document.getElementById("signupUser").value.trim();
+    let email = document.getElementById("signupEmail").value.trim();
+    let phone = document.getElementById("signupPhone").value.trim();
+    let pass = document.getElementById("signupPass").value.trim();
+    let confirmPass = document.getElementById("signupConfirmPass").value.trim();
     let msg = document.getElementById("signupMsg");
 
-    // Validation
+    // 2. Client-Side Validation
     if (user === "") {
-        msg.innerHTML = "❌ Please enter username";
-        msg.className = "message error";
+        showError(msg, "❌ Please enter a username");
         return;
     }
 
-    if (email === "") {
-        msg.innerHTML = "❌ Please enter email";
-        msg.className = "message error";
-        return;
-    }
-
-    if (!email.includes("@")) {
-        msg.innerHTML = "❌ Please enter valid email";
-        msg.className = "message error";
+    if (email === "" || !email.includes("@")) {
+        showError(msg, "❌ Please enter a valid email");
         return;
     }
 
     if (phone === "") {
-        msg.innerHTML = "❌ Please enter phone number";
-        msg.className = "message error";
+        showError(msg, "❌ Please enter a phone number");
         return;
     }
 
     let phoneRegex = /^[0-9]{10,15}$/;
     if (!phoneRegex.test(phone)) {
-        msg.innerHTML = "❌ Phone number must contain only digits and be 10-15 digits long";
-        msg.className = "message error";
+        showError(msg, "❌ Phone must be 10-15 digits (numbers only)");
         return;
     }
 
     if (pass === "") {
-        msg.innerHTML = "❌ Please enter password";
-        msg.className = "message error";
+        showError(msg, "❌ Please enter a password");
         return;
     }
 
     if (pass.length < 6) {
-        msg.innerHTML = "❌ Password must be at least 6 characters";
-        msg.className = "message error";
+        showError(msg, "❌ Password must be at least 6 characters");
         return;
     }
 
     if (pass !== confirmPass) {
-        msg.innerHTML = "❌ Passwords do not match";
-        msg.className = "message error";
+        showError(msg, "❌ Passwords do not match");
         return;
     }
 
-    // Call Spring Boot API
+    // 3. Show Loading State
+    msg.innerHTML = "⏳ Registering...";
+    msg.className = "message";
+
+    // 4. Call Spring Boot API
     try {
         let response = await fetch("http://localhost:8082/user/register", {
             method: "POST",
@@ -143,10 +63,12 @@ async function signupUser() {
             })
         });
 
+        // 5. Handle Response
         if (response.ok) {
             let data = await response.json();
-            msg.innerHTML = "🎉 Sign up successful! Welcome " + data.userName + "!";
-            msg.className = "message";
+            
+            msg.innerHTML = "🎉 Sign up successful! Welcome, " + (data.userName || user) + "!";
+            msg.className = "message success"; // Make sure you have .success in CSS
 
             // Clear form fields
             document.getElementById("signupUser").value = "";
@@ -155,17 +77,41 @@ async function signupUser() {
             document.getElementById("signupPass").value = "";
             document.getElementById("signupConfirmPass").value = "";
 
-            // Optionally redirect to login
+            // Redirect to Login Page
             setTimeout(() => {
                 window.location.href = "Login.html";
             }, 2000);
+
         } else {
-            msg.innerHTML = "❌ Signup failed. Try again.";
-            msg.className = "message error";
+            // Handle HTTP Errors
+            let errorText = "Signup failed";
+            try {
+                let errorData = await response.json();
+                errorText = errorData.message || errorData.error || "Signup failed";
+            } catch (e) {
+                errorText = response.statusText;
+            }
+
+            if (response.status === 409) {
+                // 409 Conflict usually means User/Email already exists
+                showError(msg, "❌ User or Email already exists!");
+            } else if (response.status === 400) {
+                showError(msg, "❌ Invalid data provided.");
+            } else if (response.status === 500) {
+                showError(msg, "❌ Server error. Please try again later.");
+            } else {
+                showError(msg, `❌ Error (${response.status}): ${errorText}`);
+            }
         }
     } catch (error) {
-        console.error("Error:", error);
-        msg.innerHTML = "❌ Network error. Backend not reachable.";
-        msg.className = "message error";
+        // 6. Handle Network Errors
+        console.error("Signup Error:", error);
+        showError(msg, "❌ Unable to connect to server. Is the backend running?");
     }
+}
+
+// Helper function to keep code clean
+function showError(element, message) {
+    element.innerHTML = message;
+    element.className = "message error";
 }

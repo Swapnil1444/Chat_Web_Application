@@ -1,72 +1,20 @@
-// let generatedOTP;
-
-// function sendOTP() {
-//     let phone = document.getElementById("phone").value;
-//     let msg = document.getElementById("msg");
-
-//     if (phone === "") {
-//         msg.innerHTML = "❌ Please enter phone number";
-//         msg.className = "message error";
-//         return;
-//     }
-
-//     // Generate 4-digit OTP
-//     generatedOTP = Math.floor(1000 + Math.random() * 9000);
-
-//     alert("Your OTP is: " + generatedOTP); // Demo purpose
-
-//     msg.innerHTML = "✅ OTP sent successfully";
-//     msg.className = "message";
-// }
-
-// function verifyOTP() {
-//     let enteredOTP = document.getElementById("otp").value;
-//     let msg = document.getElementById("msg");
-
-//     if (enteredOTP == generatedOTP) {
-//         msg.innerHTML = "🎉 Login Successful!";
-//         msg.className = "message";
-//     } else {
-//         msg.innerHTML = "❌ Invalid OTP";
-//         msg.className = "message error";
-//     }
-// }
-// function loginUser() {
-//     let user = document.getElementById("loginUser").value;
-//     let pass = document.getElementById("loginPass").value;
-//     let msg = document.getElementById("loginMsg");
-
-//     // Demo credentials
-//     if (user === "admin" && pass === "1234") {
-//         msg.innerHTML = "✅ Login Successful!";
-//         msg.className = "message";
-
-//         // Store username and redirect to dashboard
-//         localStorage.setItem("username", user);
-//         setTimeout(() => {
-//             window.location.href = "Dashboard.html";
-//         }, 1500);
-//     } else {
-//         msg.innerHTML = "❌ Invalid Username or Password";
-//         msg.className = "message error";
-//     }
-// }
-
-// login_user.js
-
 async function loginUser() {
-    let user = document.getElementById("loginUser").value;
-    let pass = document.getElementById("loginPass").value;
+    let user = document.getElementById("loginUser").value.trim();
+    let pass = document.getElementById("loginPass").value.trim();
     let msg = document.getElementById("loginMsg");
 
+    // 1. Validation: Check for empty fields
     if (user === "" || pass === "") {
-        msg.innerHTML = "❌ Please enter Username and Password";
+        msg.innerHTML = "⚠️ Please enter both Username and Password";
         msg.className = "message error";
         return;
     }
 
+    // Show loading state
+    msg.innerHTML = "⏳ Verifying...";
+    msg.className = "message";
+
     try {
-        // Call Spring Boot /user/login API
         let response = await fetch("http://localhost:8082/user/login", {
             method: "POST",
             headers: {
@@ -78,34 +26,53 @@ async function loginUser() {
             })
         });
 
+        // 2. Handle Success (HTTP 200 OK)
         if (response.ok) {
             let data = await response.json();
 
             if (data && data.userName) {
-                msg.innerHTML = "✅ Login Successful!";
-                msg.className = "message";
+                msg.innerHTML = "✅ Login Successful! Redirecting...";
+                msg.className = "message success"; // Ensure you have a success class in CSS
 
-
-                // Store username in localStorage
-                // After successful login response
+                // Store user details
                 localStorage.setItem("userId", data.id);
                 localStorage.setItem("username", data.userName);
 
-                // Redirect to dashboard
+                // Redirect
                 setTimeout(() => {
                     window.location.href = "Dashboard.html";
                 }, 1500);
             } else {
-                msg.innerHTML = "❌ Invalid Username or Password";
+                msg.innerHTML = "❌ Login failed: Invalid response from server";
                 msg.className = "message error";
             }
-        } else {
-            msg.innerHTML = "❌ Server Error";
+        } 
+        // 3. Handle Specific HTTP Errors
+        else {
+            // Try to get the error message sent by the backend (if any)
+            let errorText = "Login failed";
+            try {
+                let errorData = await response.json();
+                errorText = errorData.message || errorData.error || "Login failed";
+            } catch (e) {
+                // If backend didn't send JSON, use status text
+                errorText = response.statusText; 
+            }
+
+            if (response.status === 401 || response.status === 404) {
+                msg.innerHTML = "❌ Invalid Username or Password"; 
+            } else if (response.status === 500) {
+                msg.innerHTML = "❌ Server error. Please try again later.";
+            } else {
+                msg.innerHTML = `❌ Error (${response.status}): ${errorText}`;
+            }
             msg.className = "message error";
         }
+
     } catch (error) {
-        console.error("Error:", error);
-        msg.innerHTML = "❌ Network Error";
+        // 4. Handle Network Errors (Server down / CORS / Offline)
+        console.error("Login Error:", error);
+        msg.innerHTML = "❌ Unable to connect to server. Is the backend running?";
         msg.className = "message error";
     }
 }
