@@ -2,38 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chat App Login</title>
-
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-    <!-- CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - Login</title>
     <link rel="stylesheet" href="Login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
-<div class="login-box">
-    <h2>Login</h2>
 
-    <div class="input-box">
-        <i class="fa fa-user"></i>
-        <input type="text" id="loginUser" placeholder="Username">
+    <div class="login-container">
+        <h2 id="lblTitle">Welcome Back</h2>
+        <p id="lblSubtitle">Login to continue chatting</p>
+
+        <div class="input-group">
+            <input type="text" id="loginUser" required>
+            <label for="loginUser" id="lblUser">Username</label>
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="loginPass" required>
+            <label for="loginPass" id="lblPass">Password</label>
+        </div>
+
+        <button onclick="loginUser()" id="btnLogin">Login</button>
+
+        <p class="switch-page">
+            <span id="lblNoAccount">Don't have an account?</span> 
+            <a href="Signup.html" id="lblSignupLink">Sign Up</a>
+        </p>
+
+        <div id="loginMsg" class="message"></div>
     </div>
 
-    <div class="input-box">
-        <i class="fa fa-lock"></i>
-        <input type="password" id="loginPass" placeholder="Password">
-    </div>
-
-    <button class="login-btn" onclick="loginUser()">Login</button>
-
-    <p class="link-text">
-        New user? <a href="Signup.html">Sign Up</a>
-    </p>
-
-    <div id="loginMsg" class="message"></div>
-</div>
-
-<script src="login_user.js"></script>
-</body>
+    <script src="login_user.js"></script>
+    <script src="translations.js"></script> </body>
 </html>

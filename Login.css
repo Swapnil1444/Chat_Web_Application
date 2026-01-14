@@ -1,101 +1,193 @@
-body {
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+* {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: black;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    position: relative;
 }
 
-/* Login Box */
-.login-box {
-    width: 350px;
-    background-color: #111;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 0 15px #007bff;
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-/* Heading */
-.login-box h2 {
-    color: #007bff;
-    text-align: center;
-    margin-bottom: 20px;
-}
+/* --- REFINED LOGIN CONTAINER --- */
+/* --- REFINED LOGIN CONTAINER --- */
+.login-container {
+    /* Darker, smoother transparency */
+    background: rgba(30, 30, 30, 0.4); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    
+    /* Default Borders */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-left: 1px solid rgba(255, 255, 255, 0.4);
+    
+    padding: 40px;
+    border-radius: 16px;
+    
+    /* Default Shadow (Blue-ish) */
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1), 
+                0 0 25px rgba(31, 38, 135, 0.5); 
 
-/* Input Fields */
-.input-box {
-    display: flex;
-    align-items: center;
-    border: 1px solid #007bff;
-    border-radius: 5px;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-.input-box i {
-    color: #007bff;
-    margin-right: 10px;
-}
-
-.input-box input {
     width: 100%;
-    background: none;
+    max-width: 380px;
+    text-align: center;
+    color: white;
+
+    /* IMPORTANT: Smooth transition for the glow effect */
+    transition: all 0.5s ease-in-out;
+}
+
+/* --- THE HOVER GLOW & DARK MODE EFFECT --- */
+.login-container:hover {
+    /* 1. Make the container background slightly clearer/brighter */
+    background: rgba(40, 40, 40, 0.6); 
+
+    /* 2. Bright White Border */
+    border-color: rgba(255, 255, 255, 0.9);
+
+    /* 3. The Magic Shadows */
+    box-shadow: 
+        /* Layer 1: Bright White Glow immediately around the box */
+        0 0 20px rgba(255, 255, 255, 0.6),
+        
+        /* Layer 2: Softer White Glow extending further */
+        0 0 50px rgba(255, 255, 255, 0.3),
+
+        /* Layer 3: THE TRICK - A massive black shadow that darkens the rest of the screen */
+        0 0 0 100vmax rgba(0, 0, 0, 0.6); 
+
+    /* 4. Slight Pop/Zoom */
+    transform: scale(1.02);
+}
+
+h2 { margin-bottom: 10px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+p { font-size: 14px; margin-bottom: 30px; opacity: 0.9; }
+
+.input-group {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
     border: none;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
     outline: none;
     color: white;
-    font-size: 14px;
+    font-size: 16px;
+    transition: 0.3s;
 }
 
-/* Buttons */
+.input-group label {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    color: rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+    transition: 0.3s;
+    font-size: 16px;
+}
+
+.input-group input:focus,
+.input-group input:valid {
+    border-bottom-color: #23a6d5; /* Highlights blue when active */
+}
+
+.input-group input:focus + label,
+.input-group input:valid + label {
+    top: -20px;
+    font-size: 12px;
+    color: #23a6d5; /* Label turns blue when active */
+    font-weight: bold;
+}
+
+/* FIX: Auto-fill Background Removal */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px rgba(0, 0, 0, 0.2) inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 button {
     width: 100%;
-    padding: 10px;
-    border-radius: 5px;
+    padding: 12px;
     border: none;
-    margin-top: 10px;
-    font-size: 15px;
+    border-radius: 25px;
+    background: white;
+    color: #333;
+    font-weight: bold;
     cursor: pointer;
-}
-
-.otp-btn {
-    background-color: black;
-    color: #007bff;
-    border: 1px solid #007bff;
-}
-
-.login-btn {
-    background-color: #007bff;
-    color: white;
+    transition: 0.3s;
+    font-size: 16px;
+    margin-top: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 button:hover {
-    opacity: 0.9;
+    transform: translateY(-2px); /* Slight lift */
+    background: #f0f0f0;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
 }
 
-/* Message */
-.message {
-    text-align: center;
-    margin-top: 10px;
-    color: #00ff99;
+/* --- REFINED LANGUAGE SWITCHER --- */
+.lang-switch {
+    position: absolute;
+    top: 20px;
+    right: 20px;
 }
 
-.error {
-    color: red;
-}
-.link-text {
-    text-align: center;
-    margin-top: 15px;
+.lang-switch select {
+    background: rgba(0, 0, 0, 0.3); /* Darker backdrop for visibility */
+    border: 1px solid rgba(255, 255, 255, 0.4);
     color: white;
-    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    outline: none;
 }
 
-.link-text a {
-    color: #007bff;
+.lang-switch select option {
+    background: white;
+    color: #333;
+}
+
+.switch-page {
+    margin-top: 20px;
+    font-size: 13px;
+}
+
+.switch-page a {
+    color: #ffd700;
     text-decoration: none;
+    font-weight: bold;
 }
 
-.link-text a:hover {
+.switch-page a:hover {
     text-decoration: underline;
 }
+
+.message { margin-top: 15px; font-size: 14px; min-height: 20px;}
+.message.error { color: #ff6b6b; font-weight: bold; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px;}
+.message.success { color: #51cf66; font-weight: bold; }
