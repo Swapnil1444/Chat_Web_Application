@@ -1,83 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Chat App Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="Dashboard.css">
 </head>
-
 <body>
 
     <div class="dashboard-container">
-
-        <div class="sidebar">
-
-            <div class="sidebar-header">
-                <div class="user-profile-summary">
-                    <i class="fa fa-user-circle"></i>
-                    <div class="user-details">
-                        <span id="currentUser" class="username-display">Loading...</span>
-                        <span id="currentUserId" class="userid-display">ID: --</span>
-                    </div>
+        
+        <div class="sidebar" id="sidebar">
+            <div class="user-profile">
+                <div class="avatar-circle">
+                    <i class="fa fa-user"></i>
                 </div>
-                <div class="header-actions">
-                    <button class="icon-btn" onclick="openProfileModal()" title="Settings">
-                        <i class="fa fa-cog"></i>
-                    </button>
-                    <button class="logout-btn" onclick="logoutUser()" title="Logout">
-                        <i class="fa fa-sign-out"></i>
-                    </button>
+                <div class="user-details">
+                    <h3 id="currentUser">Username</h3>
+                    <span id="currentUserId" class="user-id">ID: ...</span>
+                </div>
+                <div class="user-actions">
+                    <button onclick="openProfileModal()" title="Edit Profile"><i class="fa fa-cog"></i></button>
+                    <button onclick="logoutUser()" title="Logout" class="logout-btn"><i class="fa fa-power-off"></i></button>
                 </div>
             </div>
 
             <div class="search-box">
                 <i class="fa fa-search"></i>
-                <input type="text" id="searchChatsInput" placeholder="Search chats..." onkeyup="filterChats()">
+                <input type="text" id="searchChatsInput" onkeyup="filterChats()" placeholder="Search...">
+                <button onclick="openAddContactModal()" class="add-btn" title="Add Contact">+</button>
             </div>
 
-            <div id="chatList" class="contacts-list">
-                <p class="empty-message">Loading chats...</p>
-            </div>
-
-            <div class="sidebar-footer">
-                <button class="add-contact-btn" onclick="openAddContactModal()">
-                    <i class="fa fa-user-plus"></i> Add New Contact
-                </button>
+            <div id="chatList" class="contact-list">
+                <p class="loading-text">Loading chats...</p>
             </div>
         </div>
 
         <div class="chat-area">
-            <div id="noChatSelected" class="no-chat-selected">
-                <img src="https://cdn-icons-png.flaticon.com/512/2936/2936956.png" alt="Chat"
-                    style="width: 150px; opacity: 0.8; margin-bottom: 20px;">
-
+            
+            <div id="noChatSelected" class="no-chat-bg">
+                <i class="fa fa-comments"></i>
                 <h2>Welcome, <span id="welcomeUserName">User</span>!</h2>
-                <p>Select a contact from the sidebar to start messaging.</p>
+                <p>Select a contact to start chatting.</p>
             </div>
 
             <div id="chatWindow" class="chat-window" style="display: none;">
                 <div class="chat-header">
-                    <div class="chat-contact-info">
-                        <i class="fa fa-user"></i>
-                        <h3 id="chatTitle">User Name</h3>
+                    <button class="back-btn" onclick="closeChat()"><i class="fa fa-arrow-left"></i></button>
+                    
+                    <div class="header-info">
+                        <h3 id="chatTitle">Chat Name</h3>
+                        <span class="status-dot">Online</span>
                     </div>
-                    <button class="icon-btn" onclick="closeChat()">
-                        <i class="fa fa-times"></i>
-                    </button>
-                </div>
 
-                <div id="messagesArea" class="messages-area">
-                    <p class="empty-message">No messages yet. Say hello!</p>
+                    <button class="options-btn"><i class="fa fa-ellipsis-v"></i></button>
                 </div>
+                <div id="messagesArea" class="messages-container">
+                    </div>
 
-                <div class="message-input-area">
-                    <input type="text" id="messageInput" placeholder="Type your message..."
-                        onkeypress="handleKeyPress(event)">
-                    <button class="send-btn" onclick="sendMessage()">
-                        <i class="fa fa-paper-plane"></i>
-                    </button>
+                <div class="input-area">
+                    <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+                    <button onclick="sendMessage()" class="send-btn"><i class="fa fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -85,44 +70,48 @@
 
     <div id="addContactModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('addContactModal')">&times;</span>
-            <h2>Find People</h2>
-            <div class="input-box">
-                <i class="fa fa-search"></i>
-                <input type="text" id="globalSearchInput" placeholder="Enter username to search">
-            </div>
-            <button class="modal-btn" onclick="searchGlobalUser()">Search</button>
-
-            <div id="searchResults" class="search-results-area" style="display: none;">
-                <div class="found-user">
-                    <span id="foundUserName"></span>
-                    <button class="add-btn-small" onclick="addFoundUser()">Add</button>
+            <h3>Add New Contact</h3>
+            <div class="modal-body">
+                <input type="text" id="globalSearchInput" placeholder="Enter username">
+                <button onclick="searchGlobalUser()">Search</button>
+                <div id="searchResults" style="display:none; margin-top:10px;">
+                    <p>Found: <b id="foundUserName"></b></p>
+                    <button onclick="addFoundUser()" class="primary-btn">Add Contact</button>
                 </div>
+                <div id="addContactMsg" class="message"></div>
             </div>
-
-            <div id="addContactMsg" class="message"></div>
+            <button onclick="closeModal('addContactModal')" class="close-modal-btn">Close</button>
         </div>
     </div>
 
     <div id="profileModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('profileModal')">&times;</span>
-            <h2>My Profile</h2>
-            <p id="profileUserId" class="profile-id"></p>
-
-            <div class="input-box"><i class="fa fa-user"></i><input type="text" id="profileUsername"></div>
-            <div class="input-box"><i class="fa fa-envelope"></i><input type="email" id="profileEmail"></div>
-            <div class="input-box"><i class="fa fa-phone"></i><input type="tel" id="profilePhone"></div>
-            <div class="input-box"><i class="fa fa-lock"></i><input type="password" id="profilePassword"
-                    placeholder="New Password"></div>
-
-            <button class="modal-btn" onclick="updateProfile()">Update Profile</button>
-            <button class="modal-btn" style="background-color: red;" onclick="deleteAccount()">Delete Account</button>
-            <div id="profileMsg" class="message"></div>
+            <h3>Edit Profile</h3>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="profileUsername">
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="profileEmail">
+                </div>
+                <div class="input-group">
+                    <label>Phone</label>
+                    <input type="text" id="profilePhone">
+                </div>
+                <div class="input-group">
+                    <label>New Password (Optional)</label>
+                    <input type="password" id="profilePassword" placeholder="Leave blank to keep current">
+                </div>
+                <div id="profileMsg" class="message"></div>
+                <button onclick="updateProfile()" class="primary-btn" style="margin-top: 15px;">Save Changes</button>
+                <button onclick="deleteAccount()" class="danger-btn" style="margin-top: 10px; background: #ef4444;">Delete Account</button>
+            </div>
+            <button onclick="closeModal('profileModal')" class="close-modal-btn">Close</button>
         </div>
     </div>
 
     <script src="dashboard.js"></script>
 </body>
-
 </html>
