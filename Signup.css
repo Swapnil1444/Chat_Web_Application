@@ -1,4 +1,4 @@
-body {
+/* body {
     margin: 0;
     font-family: Arial, sans-serif;
     background-color: black;
@@ -6,26 +6,26 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-}
+} */
 
 /* Signup Box */
-.signup-box {
+/* .signup-box {
     width: 350px;
     background-color: #111;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 0 15px #007bff;
-}
+} */
 
 /* Heading */
-.signup-box h2 {
+/* .signup-box h2 {
     color: #007bff;
     text-align: center;
     margin-bottom: 20px;
-}
+} */
 
 /* Input Fields */
-.input-box {
+/* .input-box {
     display: flex;
     align-items: center;
     border: 1px solid #007bff;
@@ -46,10 +46,10 @@ body {
     outline: none;
     color: white;
     font-size: 14px;
-}
+} */
 
 /* Buttons */
-button {
+/* button {
     width: 100%;
     padding: 10px;
     border-radius: 5px;
@@ -66,16 +66,16 @@ button {
 
 button:hover {
     opacity: 0.9;
-}
+} */
 
 /* Message */
-.message {
+/* .message {
     text-align: center;
     margin-top: 10px;
     color: #00ff99;
-}
+} */
 
-.error {
+/* .error {
     color: red;
 }
 
@@ -84,13 +84,13 @@ button:hover {
     margin-top: 15px;
     color: white;
     font-size: 14px;
-}
+} */
 
-.link-text a {
+/* .link-text a {
     color: #007bff;
     text-decoration: none;
-}
+} */
 
-.link-text a:hover {
+/* .link-text a:hover {
     text-decoration: underline;
-}
+} */
